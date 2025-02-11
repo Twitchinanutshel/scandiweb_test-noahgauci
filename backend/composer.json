@@ -1,0 +1,21 @@
+{
+    "name": "break/backend",
+    "description": "a PHP backend implementing graphQL endpoints for the project",
+    "type": "project",
+    "license": "MIT",
+    "autoload": {
+        "psr-4": {
+            "Break\\Backend\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Noah Gauci",
+            "email": "breakf117@gmail.com"
+        }
+    ],
+    "require": {
+        "webonyx/graphql-php": "^15.19",
+        "nikic/fast-route": "^1.3"
+    }
+}
