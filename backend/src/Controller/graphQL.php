@@ -27,10 +27,13 @@ class GraphQL {
         }
 
         try {
-            $servername = "localhost";
-            $username = "root";
-            $password = "1268";
-            $dbname = "scandiweb_test";
+            $dotenv = Dotenv::createImmutable(__DIR__ . '/../../');
+            $dotenv->load();
+
+            $servername = $_ENV['DB_HOST'];
+            $username = $_ENV['DB_USER'];
+            $password = $_ENV['DB_PASS'];
+            $dbname = $_ENV['DB_NAME'];
 
             $pdo = new PDO("mysql:host=$servername;dbname=$dbname", $username, $password);
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
