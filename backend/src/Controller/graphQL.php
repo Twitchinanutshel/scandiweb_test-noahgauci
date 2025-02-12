@@ -10,6 +10,7 @@ use GraphQL\Type\SchemaConfig;
 use Break\Backend\GraphQL\ProductType;
 use RuntimeException;
 use Throwable;
+use Dotenv\Dotenv;
 use PDO;
 
 class GraphQL {
