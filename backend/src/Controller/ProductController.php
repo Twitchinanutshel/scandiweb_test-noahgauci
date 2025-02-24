@@ -15,15 +15,14 @@ class ProductController {
     }
 
     public function getAllProducts() {
-        $stmt = $this->pdo->query("SELECT id, name, inStock, description, category, brand FROM products");
-        $products = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $stmt = $this->pdo->query("SELECT * FROM products");
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
 
-        // Modify data as needed before returning
-        foreach ($products as &$product) {
-            $product['inStock'] = (bool) $product['inStock'];
-            $product['__typename'] = "Product";
-        }
-
-        return $products;
+    public function getProductsByCategory($category) {
+        $stmt = $this->pdo->prepare("SELECT * FROM products WHERE category = :category");
+        $stmt->bindParam(':category', $category, PDO::PARAM_STR);
+        $stmt->execute();
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 }

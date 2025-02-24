@@ -4,7 +4,7 @@ import ProductListings from './ProductListings'
 function TechCategory() {
   return (
     <div>
-      <ProductListings />
+      <ProductListings categoryProp='tech' />
     </div>
   )
 }

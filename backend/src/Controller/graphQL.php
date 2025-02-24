@@ -20,7 +20,6 @@ class GraphQL {
         header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With");
         header("Access-Control-Allow-Origin: *");
 
-        // Handle preflight OPTIONS request
         if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
             header('HTTP/1.1 200 OK');
             exit;
@@ -47,7 +46,13 @@ class GraphQL {
                 'fields' => [
                     'products' => [
                         'type' => Type::listOf($productType),
-                        'resolve' => function() use ($productController) {
+                        'args' => [
+                            'category' => Type::string(),
+                        ],
+                        'resolve' => function($root, $args, $context) use ($productController) {
+                            if (isset($args['category'])) {
+                                return $productController->getProductsByCategory($args['category']);
+                            }
                             return $productController->getAllProducts();
                         },
                     ],

@@ -1,8 +1,8 @@
 import { useQuery, gql } from '@apollo/client';
 import React from 'react'
 const GET_PRODUCTS = gql`
-  query {
-    products {
+  query GetProducts($category: String!) {
+    products(category: $category) {
       id
       name
       inStock
@@ -13,8 +13,10 @@ const GET_PRODUCTS = gql`
   }
 `;
 
-function ProductListings() {
-  const { loading, error, data } = useQuery(GET_PRODUCTS);
+function ProductListings({ categoryProp }) {
+  const { loading, error, data } = useQuery(GET_PRODUCTS, {
+    variables: { category: categoryProp }
+  });
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>Error: {error.message}</p>;

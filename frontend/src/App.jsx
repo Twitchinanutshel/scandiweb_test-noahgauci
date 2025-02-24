@@ -5,6 +5,7 @@ import Header from './components/Header';
 import HomePage from './pages/HomePage';
 import TechCategory from './pages/TechCategory';
 import client from './apolloClient'; 
+import ClothesCategory from './pages/ClothesCategory';
 function App() {
   return (
     <ApolloProvider client={client}>
@@ -13,6 +14,7 @@ function App() {
         <Routes>
           <Route path='/' element={<HomePage />} />
           <Route path='/tech' element={<TechCategory />} />
+          <Route path='/clothes' element={<ClothesCategory />}/>
         </Routes>
       </Router>
     </ApolloProvider>
