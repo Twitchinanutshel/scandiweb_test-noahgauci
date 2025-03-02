@@ -9,6 +9,11 @@ const GET_PRODUCTS = gql`
       description
       category
       brand
+      gallery {
+        id
+        product_id
+        image_url
+      }
     }
   }
 `;
@@ -24,17 +29,20 @@ function ProductListings({ categoryProp }) {
   return (
     <div>
       <h1>Product Listings</h1>
-      <ul>
+      <div>
         {data.products.map(product => (
-          <li key={product.id}>
+          <div key={product.id} className=''>
+            {product.gallery.map(img => (
+              <img key={img.product_id} src={img.image_url} />
+            ))}
             <h3>{product.name}</h3>
             <p>{product.description}</p>
             <p>Category: {product.category}</p>
             <p>Brand: {product.brand}</p>
             <p>In Stock: {product.inStock ? 'Yes' : 'No'}</p>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
 }

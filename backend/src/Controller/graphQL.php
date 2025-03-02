@@ -80,6 +80,9 @@ class GraphQL {
                     ->setMutation($mutationType)
             );
 
+            $context = ['pdo' => $pdo];
+
+
             $rawInput = file_get_contents('php://input');
             if ($rawInput === false) {
                 throw new RuntimeException('Failed to get php://input');
@@ -90,7 +93,7 @@ class GraphQL {
             $variableValues = $input['variables'] ?? null;
 
             $rootValue = ['prefix' => 'You said: '];
-            $result = GraphQLBase::executeQuery($schema, $query, $rootValue, null, $variableValues);
+            $result = GraphQLBase::executeQuery($schema, $query, $rootValue, $context, $variableValues);
             $output = $result->toArray();
 
         } catch (Throwable $e) {
