@@ -3,7 +3,10 @@ import ProductListings from './ProductListings'
 
 const ClothesCategory = () => {
   return (
-    <ProductListings categoryProp={'clothes'}/>
+    <div>
+      <ProductListings categoryProp={'clothes'} />
+    </div>
+
   )
 }
 
