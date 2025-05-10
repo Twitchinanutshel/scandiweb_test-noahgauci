@@ -7,6 +7,7 @@ use GraphQL\Type\Definition\ObjectType;
 use GraphQL\Type\Definition\Type;
 use GraphQL\Type\Schema;
 use GraphQL\Type\SchemaConfig;
+use GraphQL\Type\Definition\InputObjectType;
 use Break\Backend\GraphQL\ProductType;
 use RuntimeException;
 use Throwable;
@@ -38,7 +39,6 @@ class GraphQL {
             $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
             $productType = new ProductType();
-
             $productController = new ProductController($pdo);
 
             $queryType = new ObjectType([
@@ -50,16 +50,23 @@ class GraphQL {
                             'category' => Type::string(),
                         ],
                         'resolve' => function($root, $args, $context) use ($productController) {
-                            if (isset($args['category'])) {
-                                return $productController->getProductsByCategory($args['category']);
-                            }
-                            return $productController->getAllProducts();
+                            return isset($args['category']) 
+                                ? $productController->getProductsByCategory($args['category']) 
+                                : $productController->getAllProducts();
                         },
                     ],
+                    'product' => [
+                        'type' => $productType,
+                        'args' => [
+                            'id' => Type::nonNull(Type::id())
+                        ],
+                        'resolve' => function($root, $args, $context) use ($productController) {
+                            return $productController->getProductById($args['id']);
+                        }
+                    ]
                 ],
             ]);
 
-            
             $mutationType = new ObjectType([
                 'name' => 'Mutation',
                 'fields' => [
@@ -71,6 +78,122 @@ class GraphQL {
                         ],
                         'resolve' => static fn ($calc, array $args): int => $args['x'] + $args['y'],
                     ],
+                    'placeOrder' => [
+                        'type' => new ObjectType([
+                            'name' => 'OrderResult',
+                            'fields' => [
+                                'id' => Type::id(),
+                                'success' => Type::boolean(),
+                                'message' => Type::string(),
+                                'total' => Type::float(),
+                                'currency' => Type::string(),
+                            ]
+                        ]),
+                        'args' => [
+                            'input' => Type::nonNull(Type::listOf(Type::nonNull(new InputObjectType([
+                                'name' => 'OrderItemInput',
+                                'fields' => [
+                                    'productId' => Type::nonNull(Type::string()),
+                                    'quantity' => Type::nonNull(Type::int()),
+                                    'attributes' => Type::nonNull(Type::listOf(
+                                        new InputObjectType([
+                                            'name' => 'AttributeInput',
+                                            'fields' => [
+                                                'name' => Type::nonNull(Type::string()),
+                                                'value' => Type::nonNull(Type::string()),
+                                            ],
+                                        ])
+                                    )),
+                                ],
+                            ]))))
+                        ],
+                        'resolve' => function ($root, $args, $context) {
+                            $pdo = $context['pdo'];
+                            $input = $args['input'];
+
+                            try {
+                                $pdo->beginTransaction();
+
+                                $total = 0;
+                                $currencySymbol = null;
+
+                                foreach ($input as $item) {
+                                    if (!isset($item['productId'], $item['quantity'], $item['attributes'])) {
+                                        throw new \Exception("Invalid order item format.");
+                                    }
+
+                                    $priceStmt = $pdo->prepare("SELECT amount, currency_symbol FROM prices WHERE product_id = ? LIMIT 1");
+                                    $priceStmt->execute([$item['productId']]);
+                                    $priceRow = $priceStmt->fetch(PDO::FETCH_ASSOC);
+
+                                    if (!$priceRow) {
+                                        throw new \Exception("Price not found for product: " . $item['productId']);
+                                    }
+
+                                    $total += $priceRow['amount'] * $item['quantity'];
+                                    if (!$currencySymbol) {
+                                        $currencySymbol = $priceRow['currency_symbol'];
+                                    }
+                                }
+
+                                $orderStmt = $pdo->prepare("INSERT INTO orders (created_at, total, currency_symbol) VALUES (NOW(), ?, ?)");
+                                $orderStmt->execute([$total, $currencySymbol]);
+                                $orderId = $pdo->lastInsertId();
+
+                                foreach ($input as $item) {
+                                    $stmt = $pdo->prepare("SELECT name FROM products WHERE id = ?");
+                                    $stmt->execute([$item['productId']]);
+                                    $product = $stmt->fetch(PDO::FETCH_ASSOC);
+                                    if (!$product) {
+                                        throw new \Exception("Product not found: " . $item['productId']);
+                                    }
+
+                                    $stmt = $pdo->prepare("SELECT amount, currency_symbol FROM prices WHERE product_id = ? LIMIT 1");
+                                    $stmt->execute([$item['productId']]);
+                                    $priceRow = $stmt->fetch(PDO::FETCH_ASSOC);
+
+                                    if (!$priceRow) {
+
+                                        throw new \Exception("Price not found for product: " . $item['productId']);
+                                    }
+
+                                    $stmt = $pdo->prepare("INSERT INTO order_items (order_id, product_id, product_name, quantity, price) VALUES (?, ?, ?, ?, ?)");
+                                    $stmt->execute([
+
+                                        $orderId,
+
+                                        $item['productId'],
+
+                                        $product['name'],
+
+                                        $item['quantity'],
+
+                                        $priceRow['amount']
+                                    ]);
+
+                                }
+
+                                $pdo->commit();
+                                return [
+                                    'id' => $orderId,
+                                    'success' => true,
+                                    'message' => 'Order placed successfully',
+                                    'total' => $total,
+                                    'currency' => $currencySymbol
+                                ];
+
+                            } catch (Throwable $e) {
+                                $pdo->rollBack();
+                                return [
+                                    'id' => null,
+                                    'success' => false,
+                                    'message' => 'Error: ' . $e->getMessage(),
+                                    'total' => 0,
+                                    'currency' => null
+                                ];
+                            }
+                        },
+                    ]
                 ],
             ]);
 
@@ -81,7 +204,6 @@ class GraphQL {
             );
 
             $context = ['pdo' => $pdo];
-
 
             $rawInput = file_get_contents('php://input');
             if ($rawInput === false) {

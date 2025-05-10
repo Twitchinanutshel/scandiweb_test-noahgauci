@@ -51,6 +51,9 @@ class ProductType extends ObjectType {
                 'price' => [
                     'type' => Type::listOf(new PriceType()), 
                 ],
+                'attributes' => [
+                    'type' => Type::listOf(new AttributeSetType()),
+                ],
             ],
             'resolveField' => function($product, $args, $context, $info) {
                 if ($info->fieldName === 'gallery') {
@@ -63,8 +66,48 @@ class ProductType extends ObjectType {
                     $stmt->execute([$product['id']]);
                     return $stmt->fetchAll(PDO::FETCH_ASSOC);
                 }
+                if ($info->fieldName === 'attributes') {
+                    $stmt = $context['pdo']->prepare("SELECT * FROM attribute_sets WHERE product_id = ?");
+                    $stmt->execute([$product['id']]);
+                    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+                }
                 return $product[$info->fieldName] ?? null;
             }
+        ]);
+    }
+}
+
+class AttributeItemType extends ObjectType {
+    public function __construct() {
+        parent::__construct([
+            'name' => 'AttributeItem',
+            'fields' => [
+                'id' => Type::id(),
+                'item_id' => Type::string(),
+                'displayValue' => Type::string(),
+                'value' => Type::string(),
+            ],
+        ]);
+    }
+}
+
+class AttributeSetType extends ObjectType {
+    public function __construct() {
+        parent::__construct([
+            'name' => 'AttributeSet',
+            'fields' => [
+                'id' => Type::id(),
+                'name' => Type::string(),
+                'type' => Type::string(),
+                'items' => [
+                    'type' => Type::listOf(new AttributeItemType()),
+                    'resolve' => function($set, $args, $context) {
+                        $stmt = $context['pdo']->prepare("SELECT * FROM attribute_items WHERE attribute_set_id = ?");
+                        $stmt->execute([$set['id']]);
+                        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    }
+                ],
+            ]
         ]);
     }
 }

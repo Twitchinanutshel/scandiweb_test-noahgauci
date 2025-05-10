@@ -1,5 +1,5 @@
 import React from 'react'
-import ProductListings from './ProductListings'
+import ProductListings from '../components/ProductListings'
 
 function TechCategory() {
   return (
