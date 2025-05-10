@@ -19,8 +19,12 @@ require_once __DIR__ . '/../vendor/autoload.php';
 use Break\Backend\Controller\GraphQL;
 
 $dispatcher = FastRoute\simpleDispatcher(function(FastRoute\RouteCollector $r) {
+    $r->get('/', function() {
+        echo 'Welcome to the app!';
+    });
     $r->post('/graphql', [Break\Backend\Controller\GraphQL::class, 'handle']);
 });
+
 
 
 $routeInfo = $dispatcher->dispatch(
