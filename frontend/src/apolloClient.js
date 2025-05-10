@@ -2,7 +2,7 @@ import { ApolloClient, InMemoryCache, HttpLink } from '@apollo/client';
 
 const client = new ApolloClient({
   link: new HttpLink({
-    uri: 'http://localhost:3000',
+    uri: 'https://scandiweb-test-noahgauci-5b174efbd7da.herokuapp.com',
     credentials: 'omit',
     headers: {
       'Content-Type': 'application/json',
